@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WIO Portfolio Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card-hover: #222633;
+    --border: #2a2e3b;
+    --text: #e4e6ed;
+    --text-muted: #8b8fa3;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.12);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.12);
+    --yellow: #eab308;
+    --yellow-bg: rgba(234,179,8,0.12);
+    --purple: #a855f7;
+    --accent: #6366f1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  header h1 { font-size: 1.6rem; font-weight: 700; }
+  header h1 span { color: var(--accent); }
+  .header-meta { text-align: right; color: var(--text-muted); font-size: 0.82rem; }
+  .header-meta .account { font-weight: 600; color: var(--text); }
+  .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; transition: transform 0.15s, border-color 0.15s; }
+  .summary-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .summary-card .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .summary-card .value { font-size: 1.65rem; font-weight: 700; }
+  .summary-card .sub { font-size: 0.82rem; margin-top: 4px; }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+  .section { margin-bottom: 28px; }
+  .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead th { text-align: left; padding: 14px 16px; font-weight: 600; color: var(--text-muted); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); }
+  tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--card-hover); }
+  .ticker-cell { font-weight: 700; color: var(--accent); }
+  .company-cell { color: var(--text-muted); font-size: 0.82rem; }
+  .signal { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+  .signal-buy { background: var(--green-bg); color: var(--green); }
+  .signal-hold { background: var(--yellow-bg); color: var(--yellow); }
+  .signal-sell { background: var(--red-bg); color: var(--red); }
+  .signal-strong-buy { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .analyst-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .analyst-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .analyst-card h3 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .analyst-card h3 .ticker-tag { color: var(--accent); }
+  .analyst-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.85rem; }
+  .analyst-row .alabel { color: var(--text-muted); }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; }
+  .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .chart-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 14px; }
+  .chart-container { position: relative; width: 100%; }
+  .tx-table th { font-size: 0.72rem; }
+  .tx-table td { font-size: 0.84rem; }
+  .buy-badge { background: var(--blue-bg); color: var(--blue); padding: 2px 10px; border-radius: 12px; font-size: 0.76rem; font-weight: 600; }
+  .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+  .insight-card .ititle { font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .insight-card .ibody { font-size: 0.84rem; color: var(--text-muted); line-height: 1.55; }
+  .risk-meter { display: flex; gap: 3px; margin: 8px 0; }
+  .risk-bar { height: 8px; flex: 1; border-radius: 4px; background: var(--border); }
+  .risk-bar.active-low { background: var(--green); }
+  .risk-bar.active-med { background: var(--yellow); }
+  .risk-bar.active-high { background: var(--red); }
+  .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+  .watch-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; transition: transform 0.15s, border-color 0.15s; }
+  .watch-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .watch-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .watch-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+  .watch-name { font-size: 0.82rem; color: var(--text-muted); }
+  .watch-sector-tag { font-size: 0.7rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-tech { background: var(--blue-bg); color: var(--blue); }
+  .tag-health { background: rgba(168,85,247,0.12); color: #a855f7; }
+  .tag-energy { background: var(--yellow-bg); color: var(--yellow); }
+  .tag-finance { background: var(--green-bg); color: var(--green); }
+  .tag-consumer { background: rgba(236,72,153,0.12); color: #ec4899; }
+  .watch-metrics { display: flex; gap: 16px; margin: 10px 0; font-size: 0.82rem; }
+  .watch-metric .wm-label { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; }
+  .watch-metric .wm-value { font-weight: 600; margin-top: 2px; }
+  .watch-why { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-tab { padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: var(--card); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .filter-tab:hover, .filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  footer { text-align: center; padding: 32px 0 16px; color: var(--text-muted); font-size: 0.76rem; }
+  @media (max-width: 768px) { .container { padding: 14px; } header h1 { font-size: 1.2rem; } .summary-card .value { font-size: 1.3rem; } .chart-grid { grid-template-columns: 1fr; } .analyst-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span>WIO</span> Portfolio Dashboard</h1>
+    <div class="header-meta">
+      <div class="account">WIQF000258 · DriveWealth</div>
+      <div>USD · Data as of May 31, 2026</div>
+    </div>
+  </header>
+  <div class="summary-row">
+    <div class="summary-card"><div class="label">Total Invested</div><div class="value">$2,500.02</div><div class="sub" style="color:var(--text-muted);">8 transactions · 4 holdings</div></div>
+    <div class="summary-card"><div class="label">Market Value</div><div class="value">$3,142.14</div><div class="sub" style="color:var(--text-muted);">Fees paid: $5.23</div></div>
+    <div class="summary-card"><div class="label">Unrealized P&L</div><div class="value positive">+$642.13</div><div class="sub positive">+25.68%</div></div>
+    <div class="summary-card"><div class="label">Best Performer</div><div class="value positive">CRWD</div><div class="sub positive">+92.59% (+$231.47)</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><h3>Portfolio Allocation</h3><div class="chart-container"><canvas id="allocChart"></canvas></div></div>
+    <div class="chart-card"><h3>P&L by Holding ($)</h3><div class="chart-container"><canvas id="plChart"></canvas></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">📊 Holdings</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Shares</th><th>Avg Cost</th><th>Price</th><th>Mkt Value</th><th>P&L $</th><th>P&L %</th><th>Weight</th><th>Signal</th></tr></thead>
+        <tbody>
+          <tr><td class="ticker-cell">MSFT</td><td><div>Microsoft Corp</div><div class="company-cell">Technology</div></td><td>Technology</td><td>3.8518</td><td>$389.43</td><td>$450.24</td><td>$1,734.24</td><td class="positive">+$234.23</td><td class="positive">+15.62%</td><td>55.19%</td><td><span class="signal signal-strong-buy">★ Strong Buy</span></td></tr>
+          <tr><td class="ticker-cell">VOO</td><td><div>Vanguard S&P 500</div><div class="company-cell">ETF (Broad Mkt)</div></td><td>ETF</td><td>0.8240</td><td>$606.79</td><td>$695.49</td><td>$573.09</td><td class="positive">+$73.09</td><td class="positive">+14.62%</td><td>18.24%</td><td><span class="signal signal-buy">▲ Buy</span></td></tr>
+          <tr><td class="ticker-cell">HOOD</td><td><div>Robinhood Markets</div><div class="company-cell">Financial Services</div></td><td>Fintech</td><td>3.7470</td><td>$66.72</td><td>$94.30</td><td>$353.34</td><td class="positive">+$103.34</td><td class="positive">+41.34%</td><td>11.25%</td><td><span class="signal signal-buy">▲ Buy</span></td></tr>
+          <tr><td class="ticker-cell">CRWD</td><td><div>CrowdStrike Holdings</div><div class="company-cell">Cybersecurity</div></td><td>Cybersecurity</td><td>0.6586</td><td>$379.57</td><td>$731.00</td><td>$481.47</td><td class="positive">+$231.47</td><td class="positive">+92.59%</td><td>15.32%</td><td><span class="signal signal-strong-buy">★ Strong Buy</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">🔮 Analyst Outlook & Price Targets</div>
+    <div class="analyst-grid">
+      <div class="analyst-card"><h3><span class="ticker-tag">MSFT</span> Microsoft</h3><div class="analyst-row"><span class="alabel">Consensus</span><span class="signal signal-strong-buy">Strong Buy</span></div><div class="analyst-row"><span class="alabel">Analysts</span><span>55 (52 Buy · 3 Hold · 0 Sell)</span></div><div class="analyst-row"><span class="alabel">Avg Target</span><span>$560.63</span></div><div class="analyst-row"><span class="alabel">Range</span><span>$400 – $870</span></div><div class="analyst-row"><span class="alabel">Upside to Target</span><span class="positive">+24.5%</span></div><div class="progress-bar"><div class="progress-fill" style="width:94%;background:var(--green)"></div></div></div>
+      <div class="analyst-card"><h3><span class="ticker-tag">CRWD</span> CrowdStrike</h3><div class="analyst-row"><span class="alabel">Consensus</span><span class="signal signal-strong-buy">Strong Buy</span></div><div class="analyst-row"><span class="alabel">Analysts</span><span>67 (58 Buy · 11 Hold · 1 Sell)</span></div><div class="analyst-row"><span class="alabel">Avg Target</span><span>$575.00</span></div><div class="analyst-row"><span class="alabel">Range</span><span>$353 – $775</span></div><div class="analyst-row"><span class="alabel">Upside to Target</span><span class="negative">–21.3% (above target)</span></div><div class="progress-bar"><div class="progress-fill" style="width:83%;background:var(--green)"></div></div></div>
+      <div class="analyst-card"><h3><span class="ticker-tag">HOOD</span> Robinhood</h3><div class="analyst-row"><span class="alabel">Consensus</span><span class="signal signal-buy">Buy</span></div><div class="analyst-row"><span class="alabel">Analysts</span><span>22</span></div><div class="analyst-row"><span class="alabel">Avg Target</span><span>$98.44</span></div><div class="analyst-row"><span class="alabel">Range</span><span>$52 – $155</span></div><div class="analyst-row"><span class="alabel">Upside to Target</span><span class="positive">+4.4%</span></div><div class="progress-bar"><div class="progress-fill" style="width:72%;background:var(--green)"></div></div></div>
+      <div class="analyst-card"><h3><span class="ticker-tag">VOO</span> S&P 500 ETF</h3><div class="analyst-row"><span class="alabel">Outlook</span><span class="signal signal-buy">Bullish</span></div><div class="analyst-row"><span class="alabel">S&P 500 Target</span><span>7,555 (consensus)</span></div><div class="analyst-row"><span class="alabel">Implied VOO</span><span>~$690–750</span></div><div class="analyst-row"><span class="alabel">Q1 Earnings Growth</span><span class="positive">+27% YoY</span></div><div class="analyst-row"><span class="alabel">Expense Ratio</span><span>0.03%</span></div><div class="progress-bar"><div class="progress-fill" style="width:78%;background:var(--green)"></div></div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">💡 Key Insights & Recommendations</div>
+    <div class="insights-grid">
+      <div class="insight-card"><div class="ititle">⚠️ Concentration Risk</div><div class="ibody">MSFT at 55% of portfolio is heavily concentrated. Consider trimming toward 30–40% and reallocating to VOO or CRWD for better diversification.</div><div class="risk-meter"><div class="risk-bar active-high"></div><div class="risk-bar active-high"></div><div class="risk-bar active-high"></div><div class="risk-bar active-med"></div><div class="risk-bar"></div></div></div>
+      <div class="insight-card"><div class="ititle">🚀 CRWD Outperformance</div><div class="ibody">+92.6% return is exceptional. Currently trading above analyst median target ($575). Consider taking partial profits (~25–30%) to lock gains while maintaining exposure to cybersecurity growth.</div></div>
+      <div class="insight-card"><div class="ititle">📈 HOOD Momentum</div><div class="ibody">+41% gain with analyst consensus Buy and PT of ~$98–$115. Fintech sector benefiting from crypto and retail trading boom. Hold and consider adding on dips below $85.</div></div>
+      <div class="insight-card"><div class="ititle">🛡️ VOO as Anchor</div><div class="ibody">At 18% weight with S&P 500 earnings growing 27% YoY, VOO provides stable diversified exposure. Ideal to increase this toward 25–30% to reduce single-stock risk.</div></div>
+      <div class="insight-card"><div class="ititle">💰 Total Return</div><div class="ibody">$642 profit on $2,500 invested in ~4 months = ~25.7% return. Annualized that's roughly ~77%. Significantly outpacing S&P 500. Your stock picking has been strong.</div></div>
+      <div class="insight-card"><div class="ititle">📊 Sector Mix</div><div class="ibody">Tech (55%) + Cybersecurity (15%) = 70% tech-adjacent. Fintech (11%) also growth. Only VOO (18%) provides defensive balance. Consider adding healthcare or energy exposure.</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">📋 Transaction History</div>
+    <div class="table-wrap">
+      <table class="tx-table">
+        <thead><tr><th>Date</th><th>Ticker</th><th>Action</th><th>Shares</th><th>Price</th><th>Amount</th><th>Fees</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>2026-02-05</td><td class="ticker-cell">MSFT</td><td><span class="buy-badge">Buy</span></td><td>2.0000</td><td>$399.96</td><td>$799.92</td><td>–</td><td>$799.92</td></tr>
+          <tr><td>2026-02-05</td><td class="ticker-cell">MSFT</td><td><span class="buy-badge">Buy</span></td><td>0.5003</td><td>$399.96</td><td>$200.08</td><td>$2.10</td><td>$202.18</td></tr>
+          <tr><td>2026-03-23</td><td class="ticker-cell">VOO</td><td><span class="buy-badge">Buy</span></td><td>0.8240</td><td>$606.79</td><td>$500.00</td><td>$1.05</td><td>$501.05</td></tr>
+          <tr><td>2026-03-23</td><td class="ticker-cell">MSFT</td><td><span class="buy-badge">Buy</span></td><td>0.6513</td><td>$383.84</td><td>$250.00</td><td>$0.52</td><td>$250.52</td></tr>
+          <tr><td>2026-03-27</td><td class="ticker-cell">MSFT</td><td><span class="buy-badge">Buy</span></td><td>0.7003</td><td>$357.01</td><td>$250.00</td><td>$0.52</td><td>$250.52</td></tr>
+          <tr><td>2026-03-30</td><td class="ticker-cell">HOOD</td><td><span class="buy-badge">Buy</span></td><td>3.0000</td><td>$66.72</td><td>$200.16</td><td>–</td><td>$200.16</td></tr>
+          <tr><td>2026-03-30</td><td class="ticker-cell">HOOD</td><td><span class="buy-badge">Buy</span></td><td>0.7470</td><td>$66.72</td><td>$49.84</td><td>$0.52</td><td>$50.36</td></tr>
+          <tr><td>2026-03-30</td><td class="ticker-cell">CRWD</td><td><span class="buy-badge">Buy</span></td><td>0.6586</td><td>$379.57</td><td>$250.00</td><td>$0.52</td><td>$250.52</td></tr>
+          <tr style="font-weight:700;border-top:2px solid var(--border)"><td colspan="5">Total</td><td>$2,500.00</td><td>$5.23</td><td>$2,505.23</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">🔭 Watchlist — Top 10 Stocks to Watch</div>
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="filterWatch('all')">All</div>
+      <div class="filter-tab" onclick="filterWatch('tech')">Technology</div>
+      <div class="filter-tab" onclick="filterWatch('health')">Healthcare</div>
+      <div class="filter-tab" onclick="filterWatch('energy')">Energy</div>
+      <div class="filter-tab" onclick="filterWatch('finance')">Finance</div>
+      <div class="filter-tab" onclick="filterWatch('consumer')">Consumer</div>
+    </div>
+    <div class="watchlist-grid" id="watchlistGrid">
+      <div class="watch-card" data-sector="tech"><div class="watch-header"><div><div class="watch-ticker">AVGO</div><div class="watch-name">Broadcom Inc.</div></div><span class="watch-sector-tag tag-tech">Technology</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-strong-buy">Strong Buy</span></div></div><div class="watch-metric"><div class="wm-label">Thesis</div><div class="wm-value">AI Networking</div></div></div><div class="watch-why">Dominant in AI networking and custom silicon for hyperscalers. High-margin infrastructure business with long-term contracts. A core AI infrastructure play alongside NVDA.</div></div>
+      <div class="watch-card" data-sector="tech"><div class="watch-header"><div><div class="watch-ticker">MU</div><div class="watch-name">Micron Technology</div></div><span class="watch-sector-tag tag-tech">Technology</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-buy">Buy</span></div></div><div class="watch-metric"><div class="wm-label">EPS Growth</div><div class="wm-value positive">+48%/yr</div></div></div><div class="watch-why">Morgan Stanley's top semiconductor pick for 2026. HBM3E memory chips seeing record demand from GPU makers. Trading at 28x earnings with 48% annual earnings growth — valuations look cheap relative to growth.</div></div>
+      <div class="watch-card" data-sector="health"><div class="watch-header"><div><div class="watch-ticker">LLY</div><div class="watch-name">Eli Lilly & Co.</div></div><span class="watch-sector-tag tag-health">Healthcare</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-strong-buy">Strong Buy</span></div></div><div class="watch-metric"><div class="wm-label">Thesis</div><div class="wm-value">GLP-1 Leader</div></div></div><div class="watch-why">Dominant GLP-1/obesity drug franchise (Mounjaro, Zepbound) with massive TAM expansion. CFRA top healthcare pick. Pipeline includes Alzheimer's and oncology candidates. Premium valuation justified by blockbuster growth trajectory.</div></div>
+      <div class="watch-card" data-sector="health"><div class="watch-header"><div><div class="watch-ticker">LEGN</div><div class="watch-name">Legend Biotech</div></div><span class="watch-sector-tag tag-health">Healthcare</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-strong-buy">Strong Buy</span></div></div><div class="watch-metric"><div class="wm-label">Upside</div><div class="wm-value positive">+103%</div></div></div><div class="watch-why">CAR-T cancer therapy revenue growing faster than expected. Expanding manufacturing capacity with deep pipeline in blood cancers and solid tumors. Analyst avg price target implies 103% upside — high-conviction biotech pick.</div></div>
+      <div class="watch-card" data-sector="energy"><div class="watch-header"><div><div class="watch-ticker">XOM</div><div class="watch-name">ExxonMobil</div></div><span class="watch-sector-tag tag-energy">Energy</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-buy">Buy</span></div></div><div class="watch-metric"><div class="wm-label">Sector</div><div class="wm-value positive">+25% YTD</div></div></div><div class="watch-why">Energy is the best-performing S&P 500 sector in 2026 (+25%). XOM doubled Permian Basin production via Pioneer acquisition, expanding in Guyana, and diversifying into carbon capture, hydrogen, and lithium. Strong dividend payer.</div></div>
+      <div class="watch-card" data-sector="energy"><div class="watch-header"><div><div class="watch-ticker">CVX</div><div class="watch-name">Chevron Corp.</div></div><span class="watch-sector-tag tag-energy">Energy</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-buy">Buy</span></div></div><div class="watch-metric"><div class="wm-label">CF Growth</div><div class="wm-value positive">+$12.5B</div></div></div><div class="watch-why">Expects $12.5B additional cash flow in 2026 at $70/bbl oil. Hess acquisition complete, Permian expansion underway, cost savings kicking in. Excellent dividend track record — solid defensive energy play.</div></div>
+      <div class="watch-card" data-sector="finance"><div class="watch-header"><div><div class="watch-ticker">SOFI</div><div class="watch-name">SoFi Technologies</div></div><span class="watch-sector-tag tag-finance">Finance</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-buy">Buy</span></div></div><div class="watch-metric"><div class="wm-label">Members</div><div class="wm-value">14.7M</div></div></div><div class="watch-why">Record revenue, members, and product growth. 14.7M members with crypto business generating $239.5M in Q1. Full banking charter gives it structural advantages over pure fintechs. Complements your HOOD position in the fintech theme.</div></div>
+      <div class="watch-card" data-sector="finance"><div class="watch-header"><div><div class="watch-ticker">V</div><div class="watch-name">Visa Inc.</div></div><span class="watch-sector-tag tag-finance">Finance</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-strong-buy">Strong Buy</span></div></div><div class="watch-metric"><div class="wm-label">Thesis</div><div class="wm-value">Global Payments</div></div></div><div class="watch-why">Unmatched global payment network with massive moat. Benefits from secular shift to digital payments worldwide. High margins, asset-light model, consistent compounder. Analyst favorite for steady long-term growth.</div></div>
+      <div class="watch-card" data-sector="consumer"><div class="watch-header"><div><div class="watch-ticker">COST</div><div class="watch-name">Costco Wholesale</div></div><span class="watch-sector-tag tag-consumer">Consumer</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-buy">Buy</span></div></div><div class="watch-metric"><div class="wm-label">Renewal Rate</div><div class="wm-value positive">90%+</div></div></div><div class="watch-why">Nearly indestructible membership flywheel — 90%+ renewal rate. Digital sales grew 22.6% last quarter. Defensive staple that performs in any economy. Adds non-tech diversification your portfolio currently lacks.</div></div>
+      <div class="watch-card" data-sector="consumer"><div class="watch-header"><div><div class="watch-ticker">CHWY</div><div class="watch-name">Chewy Inc.</div></div><span class="watch-sector-tag tag-consumer">Consumer</span></div><div class="watch-metrics"><div class="watch-metric"><div class="wm-label">Consensus</div><div class="wm-value"><span class="signal signal-buy">Buy</span></div></div><div class="watch-metric"><div class="wm-label">Valuation</div><div class="wm-value positive">13x fwd PE</div></div></div><div class="watch-why">Down 56% from 52-week high despite 8% revenue growth and 24% FCF growth. Autoship sales up 14%. Expanding into vet services. At 13x forward earnings, this is a value play in a growing pet economy — potential turnaround candidate.</div></div>
+    </div>
+  </div>
+  <footer>
+    WIO Portfolio Dashboard · Account WIQF000258 · Built for Raamish · Analyst data sourced May 2026
+    <br>⚠️ Not financial advice. Analyst targets are consensus estimates and not guarantees. Do your own research.
+  </footer>
+</div>
+<script>
+const allocCtx = document.getElementById('allocChart').getContext('2d');
+new Chart(allocCtx, { type: 'doughnut', data: { labels: ['MSFT (55.2%)', 'VOO (18.2%)', 'CRWD (15.3%)', 'HOOD (11.3%)'], datasets: [{ data: [55.19, 18.24, 15.32, 11.25], backgroundColor: ['#6366f1', '#22c55e', '#f59e0b', '#3b82f6'], borderColor: '#1a1d27', borderWidth: 3, hoverOffset: 8 }] }, options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: '#8b8fa3', padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: 12 } } } } } });
+const plCtx = document.getElementById('plChart').getContext('2d');
+new Chart(plCtx, { type: 'bar', data: { labels: ['MSFT', 'VOO', 'HOOD', 'CRWD'], datasets: [{ label: 'Cost Basis', data: [1500.02, 500, 250, 250], backgroundColor: 'rgba(99,102,241,0.5)', borderColor: '#6366f1', borderWidth: 1, borderRadius: 6 }, { label: 'Profit', data: [234.23, 73.09, 103.34, 231.47], backgroundColor: 'rgba(34,197,94,0.5)', borderColor: '#22c55e', borderWidth: 1, borderRadius: 6 }] }, options: { responsive: true, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: '#8b8fa3' } }, y: { stacked: true, grid: { color: '#2a2e3b' }, ticks: { color: '#8b8fa3', callback: v => '$' + v } } }, plugins: { legend: { labels: { color: '#8b8fa3', usePointStyle: true, pointStyleWidth: 10 } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2) } } } } });
+function filterWatch(sector) { document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); document.querySelectorAll('.watch-card').forEach(card => { card.style.display = (sector === 'all' || card.dataset.sector === sector) ? '' : 'none'; }); }
+</script>
+</body>
+</html>
